@@ -1,3 +1,5 @@
+module AoC5B (runIntcode) where
+
 import Data.List.Split (splitOn)
 
 replace :: Int -> Int -> [Int] -> [Int]
