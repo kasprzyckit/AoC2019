@@ -1,7 +1,9 @@
-module AoC9B (runIntcode) where
+module AoC9B (runIntcode, IntcodeState) where
 
 import Data.List.Split (splitOn)
 import Data.List (replicate)
+
+type IntcodeState = (Int, [Int], [Int], Int, [Int])
 
 {-
 1 add
@@ -33,18 +35,20 @@ value mode oper base prog = case mode of
     where
         pos = base + oper
 
-runIntcode :: Int -> [Int] -> [Int] -> Int -> [Int] -> [Int]
+runIntcode :: Int -> [Int] -> [Int] -> Int -> [Int] -> (Int, IntcodeState)
 runIntcode pos ins outs base prog = case instr of 
     1 -> runIntcode (pos+4) ins outs base $ write tpos (fval + sval) prog
     2 -> runIntcode (pos+4) ins outs base $ write tpos (fval * sval) prog
-    3 -> runIntcode (pos+2) (tail ins) outs base $ write fpos (head ins) prog
+    3 -> if null ins
+        then (3, (pos, ins, reverse outs, base, prog))
+        else runIntcode (pos+2) (tail ins) outs base $ write fpos (head ins) prog
     4 -> runIntcode (pos+2) ins (fval:outs) base prog
     5 -> runIntcode (if fval /= 0 then sval else pos+3) ins outs base prog
     6 -> runIntcode (if fval == 0 then sval else pos+3) ins outs base prog
     7 -> runIntcode (pos+4) ins outs base $ write tpos (if fval < sval then 1 else 0) prog
     8 -> runIntcode (pos+4) ins outs base $ write tpos (if fval == sval then 1 else 0) prog
     9 -> runIntcode (pos+2) ins outs (base + fval) prog
-    99 -> reverse outs
+    99 -> (99, (pos, ins, reverse outs, base, prog))
     where
         spl = drop pos prog
         opcode = head spl
@@ -62,6 +66,7 @@ runIntcode pos ins outs base prog = case instr of
 
 main = do
     fmap (
+        (\(_, (_, _, x, _, _)) -> x) .
         (runIntcode 0 [2] [] 0) .
         map read .
         (splitOn ",")) $ readFile "9.txt"
